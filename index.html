@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;600&display=swap');
+        
+        body {
+            font-family: 'IBM Plex Sans Arabic', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .chat-container {
+            height: calc(100vh - 160px);
+        }
+
+        /* تخصيص شريط التمرير */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+
+        /* تأثير ظهور الرسائل */
+        .message-appear {
+            animation: fadeInSlide 0.3s ease-out forwards;
+        }
+
+        @keyframes fadeInSlide {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* نقط التحميل */
+        .typing-dot {
+            animation: typing 1.4s infinite;
+        }
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-4px); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+    <div class="max-w-4xl mx-auto h-screen flex flex-col p-4">
+        <header class="flex items-center justify-between p-4 bg-white shadow-sm rounded-t-2xl border-b border-slate-100">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white">
+                    <i data-lucide="bot"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-slate-800 leading-none">مساعدك الذكي</h1>
+                    <span class="text-xs text-green-500 flex items-center gap-1">
+                        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> متصل الآن
+                    </span>
+                </div>
+            </div>
+            <button onclick="clearChat()" class="text-slate-400 hover:text-red-500 transition-colors">
+                <i data-lucide="trash-2"></i>
+            </button>
+        </header>
+
+        <main id="chat-window" class="chat-container flex-1 overflow-y-auto p-4 bg-white space-y-6">
+            <div class="flex justify-center">
+                <div class="bg-blue-50 text-blue-700 text-sm px-4 py-2 rounded-full">
+                    مرحباً بك! كيف يمكنني مساعدتك اليوم؟
+                </div>
+            </div>
+        </main>
+
+        <div id="typing-indicator" class="hidden px-6 py-2 bg-white flex items-center gap-2">
+            <div class="flex gap-1">
+                <span class="w-1.5 h-1.5 bg-slate-400 rounded-full typing-dot"></span>
+                <span class="w-1.5 h-1.5 bg-slate-400 rounded-full typing-dot" style="animation-delay: 0.2s"></span>
+                <span class="w-1.5 h-1.5 bg-slate-400 rounded-full typing-dot" style="animation-delay: 0.4s"></span>
+            </div>
+            <span class="text-xs text-slate-400">الذكاء الاصطناعي يفكر...</span>
+        </div>
+
+        <footer class="p-4 bg-white rounded-b-2xl shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
+            <div class="relative flex items-center">
+                <input type="text" id="user-input" 
+                    class="w-full p-4 pl-14 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                    placeholder="اكتب رسالتك هنا..."
+                    onkeypress="handleKeyPress(event)">
+                
+                <button onclick="handleSend()" 
+                    class="absolute left-2 bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-lg transition-all active:scale-95">
+                    <i data-lucide="send-horizontal" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <p class="text-[10px] text-center text-slate-400 mt-2">يعمل بواسطة n8n والذكاء الاصطناعي</p>
+        </footer>
+    </div>
+
+    <script>
+        // ضع رابط الـ Webhook الخاص بك هنا
+        const WEBHOOK_URL = 'https://abd111111100002.app.n8n.cloud/webhook/3e98e905-85ac-4ca5-846b-9684a98eb851';
+
+        // تهيئة الأيقونات
+        lucide.createIcons();
+
+        const chatWindow = document.getElementById('chat-window');
+        const userInput = document.getElementById('user-input');
+        const typingIndicator = document.getElementById('typing-indicator');
+
+        function appendMessage(role, text) {
+            const isUser = role === 'user';
+            const msgHtml = `
+                <div class="flex ${isUser ? 'justify-start' : 'justify-end'} message-appear">
+                    <div class="max-w-[85%] ${isUser ? 'bg-blue-600 text-white rounded-2xl rounded-tr-none' : 'bg-slate-100 text-slate-800 rounded-2xl rounded-tl-none'} p-4 shadow-sm">
+                        <p class="text-sm leading-relaxed">${text}</p>
+                    </div>
+                </div>
+            `;
+            chatWindow.insertAdjacentHTML('beforeend', msgHtml);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        async function handleSend() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // عرض رسالة المستخدم
+            appendMessage('user', message);
+            userInput.value = '';
+            
+            // إظهار مؤشر الكتابة
+            typingIndicator.classList.remove('hidden');
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+
+            try {
+                const response = await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        chatInput: message, // تأكد أن n8n يتوقع هذا الاسم أو غيره
+                        userId: "web_user_123" 
+                    })
+                });
+
+                if (!response.ok) throw new Error('Network response was not ok');
+                
+                const data = await response.json();
+                
+                // إخفاء مؤشر الكتابة وعرض رد البوت
+                typingIndicator.classList.add('hidden');
+                
+                // ملاحظة: تأكد من اسم الحقل القادم من n8n (غالباً يكون output أو response)
+                const botReply = data.output || data.response || data[0]?.output || "عذراً، لم أستطع معالجة الرد.";
+                appendMessage('bot', botReply);
+
+            } catch (error) {
+                console.error('Error:', error);
+                typingIndicator.classList.add('hidden');
+                appendMessage('bot', "حدث خطأ أثناء الاتصال بالخادم. تأكد من إعدادات CORS ورابط الـ Webhook.");
+            }
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') handleSend();
+        }
+
+        function clearChat() {
+            if(confirm('هل تريد مسح سجل المحادثة؟')) {
+                chatWindow.innerHTML = '';
+            }
+        }
+    </script>
+</body>
+</html>
