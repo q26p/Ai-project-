@@ -47,9 +47,8 @@
     <div class="max-w-4xl mx-auto h-screen flex flex-col p-4">
         <header class="flex items-center justify-between p-4 bg-white shadow-sm rounded-t-2xl border-b border-slate-100">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white">
-                    <i data-lucide="bot"></i>
-                </div>
+                <img src="Logo.png" alt="Logo" class="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-200">
+                
                 <div>
                     <h1 class="font-bold text-slate-800 leading-none">مساعد فريق CNS الذكي</h1>
                     <span class="text-xs text-green-500 flex items-center gap-1">
@@ -96,10 +95,8 @@
     </div>
 
     <script>
-        // ضع رابط الـ Webhook الخاص بك هنا
         const WEBHOOK_URL = 'https://abd111111100002.app.n8n.cloud/webhook/3e98e905-85ac-4ca5-846b-9684a98eb851';
 
-        // تهيئة الأيقونات
         lucide.createIcons();
 
         const chatWindow = document.getElementById('chat-window');
@@ -123,11 +120,9 @@
             const message = userInput.value.trim();
             if (!message) return;
 
-            // عرض رسالة المستخدم
             appendMessage('user', message);
             userInput.value = '';
             
-            // إظهار مؤشر الكتابة
             typingIndicator.classList.remove('hidden');
             chatWindow.scrollTop = chatWindow.scrollHeight;
 
@@ -136,38 +131,4 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        chatInput: message, // تأكد أن n8n يتوقع هذا الاسم أو غيره
-                        userId: "web_user_123" 
-                    })
-                });
-
-                if (!response.ok) throw new Error('Network response was not ok');
-                
-                const data = await response.json();
-                
-                // إخفاء مؤشر الكتابة وعرض رد البوت
-                typingIndicator.classList.add('hidden');
-                
-                // ملاحظة: تأكد من اسم الحقل القادم من n8n (غالباً يكون output أو response)
-                const botReply = data.output || data.response || data[0]?.output || "عذراً، لم أستطع معالجة الرد.";
-                appendMessage('bot', botReply);
-
-            } catch (error) {
-                console.error('Error:', error);
-                typingIndicator.classList.add('hidden');
-                appendMessage('bot', "حدث خطأ أثناء الاتصال بالخادم. تأكد من إعدادات CORS ورابط الـ Webhook.");
-            }
-        }
-
-        function handleKeyPress(e) {
-            if (e.key === 'Enter') handleSend();
-        }
-
-        function clearChat() {
-            if(confirm('هل تريد مسح سجل المحادثة؟')) {
-                chatWindow.innerHTML = '';
-            }
-        }
-    </script>
-</body>
-</html>
+                        chatInput: message,
