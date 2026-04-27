@@ -94,73 +94,93 @@
         </footer>
     </div>
 
-    <script>
-        const WEBHOOK_URL = 'https://abd111111100002.app.n8n.cloud/webhook/3e98e905-85ac-4ca5-846b-9684a98eb851';
+   <script>
+    // رابط الـ Webhook الخاص بك
+    const WEBHOOK_URL = 'https://abd111111100002.app.n8n.cloud/webhook/3e98e905-85ac-4ca5-846b-9684a98eb851';
 
-        lucide.createIcons();
+    // توليد معرف فريد للجلسة (Memory) يتغير فقط عند إعادة تحميل الصفحة
+    const sessionId = "session_" + Math.random().toString(36).substring(7);
 
-        const chatWindow = document.getElementById('chat-window');
-        const userInput = document.getElementById('user-input');
-        const typingIndicator = document.getElementById('typing-indicator');
+    // تهيئة الأيقونات عند تشغيل الصفحة
+    lucide.createIcons();
 
-        function appendMessage(role, text) {
-            const isUser = role === 'user';
-            const msgHtml = `
-                <div class="flex ${isUser ? 'justify-start' : 'justify-end'} message-appear">
-                    <div class="max-w-[85%] ${isUser ? 'bg-blue-600 text-white rounded-2xl rounded-tr-none' : 'bg-slate-100 text-slate-800 rounded-2xl rounded-tl-none'} p-4 shadow-sm">
-                        <p class="text-sm leading-relaxed">${text}</p>
+    const chatWindow = document.getElementById('chat-window');
+    const userInput = document.getElementById('user-input');
+    const typingIndicator = document.getElementById('typing-indicator');
+
+    function appendMessage(role, text) {
+        const isUser = role === 'user';
+        const msgHtml = `
+            <div class="flex ${isUser ? 'justify-start' : 'justify-end'} message-appear">
+                <div class="max-w-[85%] ${isUser ? 'bg-blue-600 text-white rounded-2xl rounded-tr-none' : 'bg-slate-100 text-slate-800 rounded-2xl rounded-tl-none'} p-4 shadow-sm">
+                    <p class="text-sm leading-relaxed">${text}</p>
+                </div>
+            </div>
+        `;
+        chatWindow.insertAdjacentHTML('beforeend', msgHtml);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    async function handleSend() {
+        const message = userInput.value.trim();
+        if (!message) return;
+
+        // عرض رسالة المستخدم
+        appendMessage('user', message);
+        userInput.value = '';
+        
+        // إظهار مؤشر الكتابة
+        typingIndicator.classList.remove('hidden');
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+
+        try {
+            const response = await fetch(WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    chatInput: message,
+                    sessionId: sessionId, // إرسال المعرف لـ n8n لتفعيل الذاكرة
+                    userId: "Abdullah_User" 
+                })
+            });
+
+            if (!response.ok) throw new Error('Network response was not ok');
+            
+            const data = await response.json();
+            
+            // إخفاء مؤشر الكتابة وعرض رد البوت
+            typingIndicator.classList.add('hidden');
+            
+            // استخراج الرد من n8n بناءً على الحقول الشائعة
+            const botReply = data.output || data.response || (data[0] && data[0].output) || "عذراً، لم أستطع معالجة الرد.";
+            appendMessage('bot', botReply);
+
+        } catch (error) {
+            console.error('Error:', error);
+            typingIndicator.classList.add('hidden');
+            appendMessage('bot', "حدث خطأ أثناء الاتصال بالخادم. تأكد من تفعيل الـ Workflow في n8n.");
+        }
+    }
+
+    function handleKeyPress(e) {
+        if (e.key === 'Enter') handleSend();
+    }
+
+    function clearChat() {
+        if(confirm('هل تريد مسح سجل المحادثة؟')) {
+            chatWindow.innerHTML = `
+                <div class="flex justify-center">
+                    <div class="bg-blue-50 text-blue-700 text-sm px-4 py-2 rounded-full">
+                        تم مسح المحادثة. كيف يمكنني مساعدتك مجدداً؟
                     </div>
                 </div>
             `;
-            chatWindow.insertAdjacentHTML('beforeend', msgHtml);
-            chatWindow.scrollTop = chatWindow.scrollHeight;
         }
+    }
 
-        async function handleSend() {
-            const message = userInput.value.trim();
-            if (!message) return;
+    // لضمان ظهور أيقونة الإرسال في حال حدوث أي تأخير في التحميل
+    setTimeout(() => lucide.createIcons(), 500);
+</script>
 
-            appendMessage('user', message);
-            userInput.value = '';
-            
-            typingIndicator.classList.remove('hidden');
-            chatWindow.scrollTop = chatWindow.scrollHeight;
-
-            try {
-                const response = await fetch(WEBHOOK_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        chatInput: message,
-                        userId: "web_user_123" 
-                    })
-                });
-
-                if (!response.ok) throw new Error('Network response was not ok');
-                
-                const data = await response.json();
-                
-                typingIndicator.classList.add('hidden');
-                
-                const botReply = data.output || data.response || data[0]?.output || "عذراً، لم أستطع معالجة الرد.";
-                appendMessage('bot', botReply);
-
-            } catch (error) {
-                console.error('Error:', error);
-                typingIndicator.classList.add('hidden');
-                appendMessage('bot', "حدث خطأ أثناء الاتصال بالخادم. تأكد من إعدادات CORS ورابط الـ Webhook.");
-            }
-        }
-
-        function handleKeyPress(e) {
-            if (e.key === 'Enter') handleSend();
-        }
-
-        function clearChat() {
-            if(confirm('هل تريد مسح سجل المحادثة؟')) {
-                chatWindow.innerHTML = '';
-            }
-        }
-    </script>
 </body>
 </html>
