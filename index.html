@@ -3,105 +3,425 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chat Assistant</title>
+    <title>CNS AI Assistant</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;600&display=swap');
-        
+        :root {
+            --bg-base:       #0d0d14;
+            --bg-surface:    #13131f;
+            --bg-elevated:   #1a1a2e;
+            --bg-card:       #1e1e30;
+            --purple-900:    #1e0a3c;
+            --purple-800:    #2d1060;
+            --purple-700:    #3d1880;
+            --purple-600:    #5521b5;
+            --purple-500:    #7c3aed;
+            --purple-400:    #a78bfa;
+            --purple-300:    #c4b5fd;
+            --purple-glow:   rgba(124, 58, 237, 0.25);
+            --border:        rgba(124, 58, 237, 0.15);
+            --border-hover:  rgba(124, 58, 237, 0.4);
+            --text-primary:  #f1f0ff;
+            --text-secondary:#a19dc4;
+            --text-muted:    #6b6891;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
             font-family: 'IBM Plex Sans Arabic', sans-serif;
-            background-color: #f8fafc;
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
         }
 
-        .chat-container {
-            height: calc(100vh - 160px);
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 60% 50% at 80% 10%, rgba(93, 38, 187, 0.18) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 40% at 10% 80%, rgba(67, 24, 140, 0.14) 0%, transparent 55%),
+                radial-gradient(ellipse 30% 30% at 50% 50%, rgba(40, 15, 80, 0.1) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
         }
 
-        /* تخصيص شريط التمرير */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-
-        /* تأثير ظهور الرسائل */
-        .message-appear {
-            animation: fadeInSlide 0.3s ease-out forwards;
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.025'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.6;
         }
 
-        @keyframes fadeInSlide {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .app-shell {
+            position: relative;
+            z-index: 1;
+            max-width: 860px;
+            margin: 0 auto;
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
         }
 
-        /* نقط التحميل */
-        .typing-dot {
-            animation: typing 1.4s infinite;
+        .header {
+            background: linear-gradient(135deg, rgba(30, 18, 58, 0.95) 0%, rgba(20, 14, 40, 0.95) 100%);
+            border: 1px solid var(--border);
+            border-bottom: none;
+            border-radius: 20px 20px 0 0;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            backdrop-filter: blur(20px);
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
         }
-        @keyframes typing {
-            0%, 60%, 100% { transform: translateY(0); }
-            30% { transform: translateY(-4px); }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--purple-500), transparent);
+            opacity: 0.6;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo-wrap {
+            position: relative;
+            width: 44px;
+            height: 44px;
+            flex-shrink: 0;
+        }
+
+        .logo-wrap img {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 1.5px solid rgba(124, 58, 237, 0.5);
+        }
+
+        .logo-pulse {
+            position: absolute;
+            inset: -4px;
+            border-radius: 16px;
+            background: radial-gradient(circle, rgba(124,58,237,0.3), transparent 70%);
+            animation: pulse-ring 2.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-ring {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.06); }
+        }
+
+        .header-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: #34d399;
+            margin-top: 3px;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: #34d399;
+            border-radius: 50%;
+            box-shadow: 0 0 6px #34d399;
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .clear-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.03);
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .clear-btn:hover {
+            border-color: rgba(239, 68, 68, 0.4);
+            color: #f87171;
+            background: rgba(239, 68, 68, 0.08);
+        }
+
+        #chat-window {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px 20px;
+            background: rgba(13, 13, 20, 0.85);
+            border-left: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            scroll-behavior: smooth;
+            min-height: 0;
+        }
+
+        #chat-window::-webkit-scrollbar { width: 4px; }
+        #chat-window::-webkit-scrollbar-track { background: transparent; }
+        #chat-window::-webkit-scrollbar-thumb {
+            background: rgba(124, 58, 237, 0.3);
+            border-radius: 10px;
+        }
+
+        .welcome-chip {
+            align-self: center;
+            background: linear-gradient(135deg, rgba(93, 38, 187, 0.2), rgba(67, 24, 140, 0.15));
+            border: 1px solid rgba(124, 58, 237, 0.3);
+            color: var(--purple-300);
+            font-size: 13px;
+            padding: 8px 18px;
+            border-radius: 50px;
+            text-align: center;
+        }
+
+        .message-row {
+            display: flex;
+            animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .message-row.user { justify-content: flex-start; }
+        .message-row.bot  { justify-content: flex-end; }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(14px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .bubble {
+            max-width: 78%;
+            padding: 12px 16px;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .bubble.user-bubble {
+            background: linear-gradient(135deg, var(--purple-600), var(--purple-700));
+            color: #f1f0ff;
+            border-radius: 18px 4px 18px 18px;
+            box-shadow: 0 4px 20px rgba(85, 33, 181, 0.35), inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+
+        .bubble.bot-bubble {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-radius: 4px 18px 18px 18px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        }
+
+        #typing-indicator {
+            background: rgba(13, 13, 20, 0.85);
+            border-left: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            padding: 4px 24px 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        #typing-indicator.hidden { display: none; }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 8px 14px;
+        }
+
+        .dot {
+            width: 6px;
+            height: 6px;
+            background: var(--purple-400);
+            border-radius: 50%;
+            animation: bounce 1.3s infinite;
+        }
+        .dot:nth-child(2) { animation-delay: 0.18s; }
+        .dot:nth-child(3) { animation-delay: 0.36s; }
+
+        @keyframes bounce {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-5px); opacity: 1; }
+        }
+
+        .typing-label {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .footer {
+            background: linear-gradient(135deg, rgba(25, 16, 50, 0.97) 0%, rgba(16, 12, 32, 0.97) 100%);
+            border: 1px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 20px 20px;
+            padding: 14px 16px 14px;
+            backdrop-filter: blur(20px);
+            flex-shrink: 0;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 6px 6px 6px 14px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .input-row:focus-within {
+            border-color: var(--border-hover);
+            box-shadow: 0 0 0 3px rgba(124,58,237,0.12);
+        }
+
+        #user-input {
+            flex: 1;
+            min-width: 0;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-family: 'IBM Plex Sans Arabic', sans-serif;
+            font-size: 14px;
+            color: var(--text-primary);
+            caret-color: var(--purple-400);
+            direction: rtl;
+            text-align: right;
+            padding: 6px 0;
+        }
+
+        #user-input::placeholder { color: var(--text-muted); }
+
+        .send-btn {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(135deg, var(--purple-500), var(--purple-600));
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 12px rgba(124,58,237,0.4);
+        }
+
+        .send-btn:hover {
+            background: linear-gradient(135deg, var(--purple-400), var(--purple-500));
+            box-shadow: 0 4px 20px rgba(124,58,237,0.55);
+            transform: scale(1.04);
+        }
+
+        .send-btn:active { transform: scale(0.96); }
+
+        .footer-credit {
+            text-align: center;
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 8px;
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900">
+<body>
 
-    <div class="max-w-4xl mx-auto h-screen flex flex-col p-4">
-        <header class="flex items-center justify-between p-4 bg-white shadow-sm rounded-t-2xl border-b border-slate-100">
-            <div class="flex items-center gap-3">
-                <img src="LOGO.png" alt="Logo" class="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-200">
-                
-                <div>
-                    <h1 class="font-bold text-slate-800 leading-none">مساعد فريق CNS الذكي</h1>
-                    <span class="text-xs text-green-500 flex items-center gap-1">
-                        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> متصل الآن
-                    </span>
+<div class="app-shell">
+
+    <header class="header">
+        <div class="header-left">
+            <div class="logo-wrap">
+                <div class="logo-pulse"></div>
+                <img src="LOGO.png" alt="CNS Logo">
+            </div>
+            <div>
+                <div class="header-title">مساعد فريق CNS الذكي</div>
+                <div class="status-badge">
+                    <span class="status-dot"></span>
+                    متصل الآن
                 </div>
             </div>
-            <button onclick="clearChat()" class="text-slate-400 hover:text-red-500 transition-colors">
-                <i data-lucide="trash-2"></i>
-            </button>
-        </header>
-
-        <main id="chat-window" class="chat-container flex-1 overflow-y-auto p-4 bg-white space-y-6">
-            <div class="flex justify-center">
-                <div class="bg-blue-50 text-blue-700 text-sm px-4 py-2 rounded-full">
-                    مرحباً بك! كيف يمكنني مساعدتك اليوم؟
-                </div>
-            </div>
-        </main>
-
-        <div id="typing-indicator" class="hidden px-6 py-2 bg-white flex items-center gap-2">
-            <div class="flex gap-1">
-                <span class="w-1.5 h-1.5 bg-slate-400 rounded-full typing-dot"></span>
-                <span class="w-1.5 h-1.5 bg-slate-400 rounded-full typing-dot" style="animation-delay: 0.2s"></span>
-                <span class="w-1.5 h-1.5 bg-slate-400 rounded-full typing-dot" style="animation-delay: 0.4s"></span>
-            </div>
-            <span class="text-xs text-slate-400">الذكاء الاصطناعي يفكر...</span>
         </div>
+        <button class="clear-btn" onclick="clearChat()">
+            <i data-lucide="trash-2" style="width:16px;height:16px;"></i>
+        </button>
+    </header>
 
-        <footer class="p-4 bg-white rounded-b-2xl shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
-            <div class="relative flex items-center">
-                <input type="text" id="user-input" 
-                    class="w-full p-4 pl-14 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                    placeholder="اكتب رسالتك هنا..."
-                    onkeypress="handleKeyPress(event)">
-                
-                <button onclick="handleSend()" 
-                    class="absolute left-2 bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-lg transition-all active:scale-95">
-                    <i data-lucide="send-horizontal" class="w-5 h-5"></i>
-                </button>
-            </div>
-            <p class="text-[10px] text-center text-slate-400 mt-2">By Dr Abdullah Alhassan</p>
-        </footer>
+    <main id="chat-window">
+        <div class="welcome-chip">✦ مرحباً بك! كيف يمكنني مساعدتك اليوم؟</div>
+    </main>
+
+    <div id="typing-indicator" class="hidden">
+        <div class="typing-dots">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+        </div>
+        <span class="typing-label">الذكاء الاصطناعي يفكر...</span>
     </div>
 
-   <script>
-    // رابط الـ Webhook الخاص بك
-    const WEBHOOK_URL = 'https://abd111111100002.app.n8n.cloud/webhook/3e98e905-85ac-4ca5-846b-9684a98eb851';
+    <footer class="footer">
+        <div class="input-row">
+            <input type="text" id="user-input"
+                placeholder="اكتب رسالتك هنا..."
+                onkeypress="handleKeyPress(event)">
+            <button class="send-btn" onclick="handleSend()">
+                <i data-lucide="send-horizontal" style="width:18px;height:18px;"></i>
+            </button>
+        </div>
+        <p class="footer-credit">By Dr Abdullah Alhassan</p>
+    </footer>
 
-    // توليد معرف فريد للجلسة (Memory) يتغير فقط عند إعادة تحميل الصفحة
+</div>
+
+<script>
+    const WEBHOOK_URL = 'https://abd111111100002.app.n8n.cloud/webhook/3e98e905-85ac-4ca5-846b-9684a98eb851';
     const sessionId = "session_" + Math.random().toString(36).substring(7);
 
-    // تهيئة الأيقونات عند تشغيل الصفحة
     lucide.createIcons();
 
     const chatWindow = document.getElementById('chat-window');
@@ -110,10 +430,13 @@
 
     function appendMessage(role, text) {
         const isUser = role === 'user';
+        const rowClass = isUser ? 'user' : 'bot';
+        const bubbleClass = isUser ? 'user-bubble' : 'bot-bubble';
+
         const msgHtml = `
-            <div class="flex ${isUser ? 'justify-start' : 'justify-end'} message-appear">
-                <div class="max-w-[85%] ${isUser ? 'bg-blue-600 text-white rounded-2xl rounded-tr-none' : 'bg-slate-100 text-slate-800 rounded-2xl rounded-tl-none'} p-4 shadow-sm">
-                    <p class="text-sm leading-relaxed">${text}</p>
+            <div class="message-row ${rowClass}">
+                <div class="bubble ${bubbleClass}">
+                    <p style="margin:0;">${text}</p>
                 </div>
             </div>
         `;
@@ -125,11 +448,9 @@
         const message = userInput.value.trim();
         if (!message) return;
 
-        // عرض رسالة المستخدم
         appendMessage('user', message);
         userInput.value = '';
-        
-        // إظهار مؤشر الكتابة
+
         typingIndicator.classList.remove('hidden');
         chatWindow.scrollTop = chatWindow.scrollHeight;
 
@@ -137,26 +458,21 @@
             const response = await fetch(WEBHOOK_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     chatInput: message,
-                    sessionId: sessionId, // إرسال المعرف لـ n8n لتفعيل الذاكرة
-                    userId: "Abdullah_User" 
+                    sessionId: sessionId,
+                    userId: "Abdullah_User"
                 })
             });
 
-            if (!response.ok) throw new Error('Network response was not ok');
-            
+            if (!response.ok) throw new Error('error');
             const data = await response.json();
-            
-            // إخفاء مؤشر الكتابة وعرض رد البوت
             typingIndicator.classList.add('hidden');
-            
-            // استخراج الرد من n8n بناءً على الحقول الشائعة
+
             const botReply = data.output || data.response || (data[0] && data[0].output) || "عذراً، لم أستطع معالجة الرد.";
             appendMessage('bot', botReply);
 
         } catch (error) {
-            console.error('Error:', error);
             typingIndicator.classList.add('hidden');
             appendMessage('bot', "حدث خطأ أثناء الاتصال بالخادم. تأكد من تفعيل الـ Workflow في n8n.");
         }
@@ -167,18 +483,11 @@
     }
 
     function clearChat() {
-        if(confirm('هل تريد مسح سجل المحادثة؟')) {
-            chatWindow.innerHTML = `
-                <div class="flex justify-center">
-                    <div class="bg-blue-50 text-blue-700 text-sm px-4 py-2 rounded-full">
-                        تم مسح المحادثة. كيف يمكنني مساعدتك مجدداً؟
-                    </div>
-                </div>
-            `;
+        if (confirm('هل تريد مسح سجل المحادثة؟')) {
+            chatWindow.innerHTML = `<div class="welcome-chip">✦ تم مسح المحادثة. كيف يمكنني مساعدتك مجدداً؟</div>`;
         }
     }
 
-    // لضمان ظهور أيقونة الإرسال في حال حدوث أي تأخير في التحميل
     setTimeout(() => lucide.createIcons(), 500);
 </script>
 
